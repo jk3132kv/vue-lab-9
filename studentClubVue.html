@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Club Membership</title>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <style>
+        .selected {
+            text-decoration: line-through;
+            font-style: italic;
+            color: gray;
+        }
+
+        input {
+            width: 100%;
+            padding: 5px;
+            margin: 5px 5px 5px 0px;
+            box-sizing: border-box;
+        }
+
+        #error {
+            color: red;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div id="app">
+
+        <h1>Student Club Roster</h1>
+
+        <h2>Add Students</h2>
+
+        <!--  display an error message if there are errors in the form   -->
+        <!--    This HTML only exists on the page if the condition in the v-if directive
+is true. otherwise, no HTML -->
+        <!--    everything you know about id and styles still applies -->
+        <!--    JS truthy and falsy values. error is a string, empty string is falsy -->
+        <!--    Any string that has at least one character is truthy -->
+        <!--    https://developer.mozilla.org/en-US/docs/Glossary/Truthy -->
+        <!--    <p id="error" v-if="error.length > 0 ">Form error: {{ error }}</p>-->
+        <!--    <p id="error" v-if="error != '' ">Form error: {{ error }}</p>-->
+        <p id="error" v-if="error">Form error: {{ error }}</p>
+
+        <label for="student-name">Student Name</label>
+        <!--    v-model.trim removes spaces at the start and end of the input value,
+if there are any -->
+        <input id="student-name" name="student-name" v-model.trim="newName">
+        <br>
+
+        <label for="student-id">Student ID</label>
+        <!--  v-model this input to newID -->
+        <input id="student-id" name="student-id" v-model="newID">
+
+        <br>
+        <label for="student-gpa">Student GPA</label>
+        <!-- v-model this input to newGPA -->
+        <input id="student-gpa" name="student-gpa" type="number" v-model="newGPA">
+        <br>
+
+        <!--  connect click event -->
+        <button id="add-student" v-on:click="addStudent">Add Student</button>
+
+        <h2>Student List</h2>
+
+        <p>There {{ studentCount > 1 ? "are" : "is" }}
+            <span id="student-count">
+                {{ studentCount }}
+            </span>
+            {{ studentCountDescriptor }} in the club.
+        </p>
+
+
+        <ul id="student-list">
+
+            <!--
+When each li is clicked, call toggleSelect with an argument,
+the current student's id value
+        v-on:click="toggleSelect(student.id)"
+toggleSelect changes the data in the Vue - searches student list
+and toggles the selected property's value
+​
+Give this element the class "selected" if the expression student.selected
+evaluates to true
+v-bind:class="{ selected: student.selected }"
+-->
+
+            <li v-for="student in students" v-on:click="toggleSelect(student.id)"
+                v-bind:class="{ selected: student.selected }">
+
+                <b>Name:</b> {{ student.name }}
+                <b>ID:</b> {{ student.id}}
+                <b>GPA:</b> {{ student.gpa}}
+            </li>
+        </ul>
+
+        <button id="remove-selected-students" v-on:click="deleteSelected">Remove selected students</button>
+
+    </div>
+
+    <script>
+
+        /* Add the following functionality to this page
+    
+        When the page loads
+            - Using JavaScript, display 0 in span#student-count
+    
+        When button#add-students is clicked
+            - Read the value from the student-name input
+            - Read the value from the student-id input
+            - Read the value from the student-gpa input
+            - Create a new li element
+            - Set the new li element innerHTML to a string containing the student's name, id, and GPA
+                - for example "Beyonce Knowles, id: aa1234bb, GPA: 3.8"
+                - Use a template string
+            - Add a click event handler to each li element.
+                When a li element is clicked, add the class="selected" to that li element.
+                When a li element is clicked again, remove the class="selected" from that li element
+            - Add the new li element to ul#student-list element
+            - Update the span#student-count value to the new number of students
+    
+        When button#remove-selected-students is clicked,
+            - remove all of the elements with the class="selected" from the list.
+    
+        */
+
+        let app = Vue.createApp({
+            data() {
+                return {
+                    newName: '',  // will v-model this to a form input
+                    newID: '',
+                    newGPA: '',
+                    students: [
+                        { name: 'A. Example', id: '123456', gpa: 3.5, selected: false },
+                        { name: 'B. Example', id: '876543', gpa: 3.7, selected: false },
+                    ],
+                    error: ''  // store an error message for the form, if there is one
+                }
+            },
+            methods: {
+                addStudent() {
+
+                    this.error = ''
+
+                    // validate - all inputs present
+                    if (!this.newName || !this.newID || !this.newGPA) {
+                        this.error = 'Fill in all the fields'
+                        return
+                    }
+
+                    // Check range of GPA
+                    if (this.newGPA < 0 || this.newGPA > 4) {
+                        this.error = 'GPA must be between 0 and 4'
+                        return
+                    }
+
+                    // Make sure new IDs are valid
+                    const regexp = new RegExp(/^[a-zA-Z]{2}[1-9]{4}[a-zA-Z]{2}$/)
+                    if (!regexp.test(this.newID)) {
+                        this.error = 'ID is not in the correct format'
+                        return
+                    }
+
+                    // Don't allow duplicate ids
+                    if (this.students.some(student => student.id === this.newID)) {
+                        this.error = 'ID already in the list'
+                        return
+                    }
+
+                    //  create new student object
+                    let newStudent = {
+                        // name, id, gpa set
+                        // from vue data,
+                        // which comes from the form
+                        // via v-model
+                        name: this.newName,
+                        id: this.newID,
+                        gpa: this.newGPA,
+                        selected: false
+                    }
+                    //  add student to student list
+                    this.students.push(newStudent)
+
+                    this.newName = ''
+                    this.newID = ''
+                    this.newGPA = ''
+                },
+
+                toggleSelect(id) {
+                    // Search the list for the student with this ID and toggle the selected value
+                    this.students.forEach(s => {
+                        if (s.id === id) {
+                            // if true, set to false
+                            // if false, set to true
+                            s.selected = !s.selected
+                        }
+                    })
+                },
+                deleteSelected() {
+                    this.students = this.students.filter(student => {
+                        return !student.selected
+                    })
+                }
+            },
+            computed: {
+                studentCount() {
+                    return this.students.length
+                },
+                studentCountDescriptor() {
+                    return this.students.length > 1 ? "students" : "student"
+                }
+            }
+
+        })
+
+        app.mount('#app') // tell Vue to manage the HTML in the element with id "app"
+
+    </script>
+
+</body>
+
+</html>
